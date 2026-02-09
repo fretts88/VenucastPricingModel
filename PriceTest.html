@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rental Calculator Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    label { display: block; margin-top: 1em; }
+    input { padding: 0.3em; width: 120px; }
+    button { margin-top: 1em; padding: 0.5em 1em; }
+    .result { margin-top: 2em; padding: 1em; border: 1px solid #ccc; }
+    .result h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>Rental Calculator</h1>
+
+  <label>
+    Quantity:
+    <input type="number" id="quantity" value="150">
+  </label>
+  <label>
+    Base Rate:
+    <input type="number" id="baseRate" value="4.98" step="0.01">
+  </label>
+  <label>
+    Days:
+    <input type="number" id="days" value="5">
+  </label>
+  <label>
+    SKU:
+    <input type="text" id="sku" value="default">
+  </label>
+
+  <button onclick="runCalc()">Calculate</button>
+
+  <div class="result" id="output"></div>
+
+<script>
+// Pricing rules JSON
+const pricingData = {
+  pricingRules: {
+    default: {
+
+      calculateHandlingFee: true,
+      quantityTiers: [
+        { from: 1, discount: 0.00 },
+        { from: 101, discount: 0.10 },
+        { from: 201, discount: 0.20 },
+        { from: 301, discount: 0.30 },
+        { from: 401, discount: 0.40 },
+        { from: 501, discount: 0.50 },
+        { from: 601, discount: 0.60 },
+        { from: 701, discount: 0.70 },
+        { from: 801, discount: 0.80 },
+        { from: 901, discount: 0.90 }
+      ],
+      dayDiscounts: [
+        { day: 1, discount: 0.00 },
+        { day: 2, discount: 0.20 },
+        { day: 3, discount: 0.30 },
+        { day: 4, discount: 0.40 },
+        { day: 5, discount: 0.50 },
+        { day: 6, discount: 0.60 },
+        { day: 7, discount: 0.70 },
+        { day: 8, discount: 0.80 },
+        { day: 9, discount: 0.90 },
+        { day: 10, discount: 0.91 },
+        { day: 11, discount: 0.92 },
+        { day: 15, discount: 0.93 },
+        { day: 20, discount: 0.94 },
+        { day: 30, discount: 0.95 },
+        { day: 60, discount: 0.96 },
+        { day: 90, discount: 0.97 }
+      ],
+      handlingFees: [
+        { from: 1, fee: 99 },
+        { from: 11, fee: 149 },
+        { from: 31, fee: 249 },
+        { from: 101, fee: 399 },
+        { from: 301, fee: 599 },
+        { from: 501, fee: 799 }
+      ]
+    },
+    sku_headphones: {
+      baseRate: 500.00,
+      calculateHandlingFee: false,
+      quantityTiers: [
+        { from: 1, discount: 0.00 },
+        { from: 50, discount: 0.05 },
+        { from: 100, discount: 0.10 }
+      ],
+      dayDiscounts: [
+        { day: 1, discount: 0.00 },
+        { day: 7, discount: 0.20 },
+        { day: 14, discount: 0.30 }
+      ],
+      handlingFees: []
+    }
+  }
+};
+
+// Engine functions
+function getEffectiveQty(quantity, tiers) {
+  let effectiveQty = 0;
+  for (let i = 0; i < tiers.length; i++) {
+    const tier = tiers[i];
+    const nextFrom = (i + 1 < tiers.length) ? tiers[i + 1].from : Infinity;
+    const tierQty = Math.max(0, Math.min(quantity, nextFrom - 1) - tier.from + 1);
+    if (tierQty > 0) {
+      effectiveQty += tierQty * (1 - tier.discount);
+    }
+  }
+  return effectiveQty;
+}
+
+function getHandlingFee(quantity, fees, enabled) {
+  if (!enabled) return 0;
+  const row = fees.filter(r => quantity >= r.from).slice(-1)[0];
+  return row ? row.fee : 0;
+}
+
+function getDayDiscount(day, dayDiscounts) {
+    // Get the discount for the given day by finding the last entry in dayDiscounts where day >= entry.day
+    const anchor = dayDiscounts.filter(d => d.day <= day).sort((a, b) => a.day - b.day).slice(-1)[0];
+    return anchor ? anchor.discount : 0;
+
+}
+
+function getRunningTotal(days, baseRate, effectiveQty, dayDiscounts) {
+  const dailyBase = baseRate * effectiveQty;
+  let total = 0;
+  for (let day = 1; day <= days; day++) {
+    const discount = getDayDiscount(day, dayDiscounts);
+    console.log(`Day ${day}: Base $${dailyBase.toFixed(2)}, Discounted $${(dailyBase * (1 - discount)).toFixed(2)}, - ${discount * 100}%`);
+    const dayFactor = 1 - discount;
+    total += dailyBase * dayFactor;
+  }
+  return total;
+}
+
+function calculateRental(quantity, days, sku, data, baseRate) {
+  const rules = data.pricingRules[sku] || data.pricingRules.default;
+  
+  const effectiveQty = getEffectiveQty(quantity, rules.quantityTiers);
+  const handlingFee = getHandlingFee(quantity, rules.handlingFees, rules.calculateHandlingFee);
+  const subtotal = getRunningTotal(days, baseRate, effectiveQty, rules.dayDiscounts);
+  const total = subtotal + handlingFee;
+  const dailyBase = baseRate * effectiveQty;
+  return { sku, effectiveQty, handlingFee, subtotal, total, dailyBase };
+}
+
+// UI handler
+function runCalc() {
+  const qty = parseInt(document.getElementById("quantity").value, 10);
+  const baseRate = parseFloat(document.getElementById("baseRate").value);
+  const days = parseInt(document.getElementById("days").value, 10);
+  const sku = document.getElementById("sku").value.trim();
+
+  const result = calculateRental(qty, days, sku, pricingData, baseRate);
+
+  document.getElementById("output").innerHTML = `
+    <h3>Results for SKU: ${result.sku}</h3>
+    <p>Effective Quantity: ${result.effectiveQty.toFixed(2)}</p>
+    <p>Handling Fee: $${result.handlingFee.toFixed(2)}</p>
+    <p>Subtotal: $${result.subtotal.toFixed(2)}</p>
+    <p><strong>Total: $${result.total.toFixed(2)}</strong></p>
+    <p>Daily Base: $${result.dailyBase.toFixed(2)}</p>
+  `;
+}
+</script>
+</body>
+</html>

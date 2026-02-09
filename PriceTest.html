@@ -49,6 +49,7 @@
       <select id="qtyChartMetric">
         <option value="discountedPrice">Discounted Price</option>
         <option value="totalDiscount">Total Discount</option>
+        <option value="discountPct">Percent Discount</option>
       </select>
     </label>
     <label>
@@ -79,6 +80,7 @@
       <select id="dayChartMetric">
         <option value="discountedPrice">Discounted Price</option>
         <option value="totalDiscount">Total Discount</option>
+        <option value="discountPct">Percent Discount</option>
       </select>
     </label>
     <label>
@@ -214,8 +216,9 @@ class PricingEngine {
     //const dailyBase = baseRate * effectiveQty;
     const originalPrice = baseRate * quantity * days;
     const totalDiscount = originalPrice - discountedPrice;
+    const discountPct = originalPrice > 0 ? (totalDiscount / originalPrice) * 100 : 0;
 
-    return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount };
+    return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount, discountPct };
   }
 }
 
@@ -249,6 +252,20 @@ function getNumberInput(id, fallback) {
   return Number.isFinite(value) ? value : fallback;
 }
 
+function getMetricLabel(metric) {
+  if (metric === "totalDiscount") return "Total Discount";
+  if (metric === "discountPct") return "Percent Discount";
+  return "Discounted Price";
+}
+
+function getMetricAxisTitle(metric) {
+  return metric === "discountPct" ? "Percent" : "Total";
+}
+
+function roundToOneDecimal(value) {
+  return Math.round(value * 10) / 10;
+}
+
 function plotQuantityChart() {
   const qtyStart = getNumberInput("qtyChartStart", 1);
   const qtyEnd = getNumberInput("qtyChartEnd", 500);
@@ -265,7 +282,7 @@ function plotQuantityChart() {
   for (let qty = qtyStart; qty <= qtyEnd; qty += qtyStep) {
     const result = engine.calculateRental(qty, fixedDays, sku, baseRate);
     labels.push(qty);
-    data.push(result[metric]);
+    data.push(roundToOneDecimal(result[metric]));
   }
 
   const ctx = document.getElementById("quantityChart").getContext("2d");
@@ -275,7 +292,7 @@ function plotQuantityChart() {
     data: {
       labels,
       datasets: [{
-        label: `${metric === "totalDiscount" ? "Total Discount" : "Discounted Price"} (Days = ${fixedDays})`,
+        label: `${getMetricLabel(metric)} (Days = ${fixedDays})`,
         data,
         borderColor: "#1f77b4",
         backgroundColor: "rgba(31, 119, 180, 0.15)",
@@ -287,7 +304,7 @@ function plotQuantityChart() {
       responsive: true,
       scales: {
         x: { title: { display: true, text: "Quantity" } },
-        y: { title: { display: true, text: "Total" } }
+        y: { title: { display: true, text: getMetricAxisTitle(metric) } }
       }
     }
   });
@@ -309,7 +326,7 @@ function plotDayChart() {
   for (let days = dayStart; days <= dayEnd; days += dayStep) {
     const result = engine.calculateRental(fixedQty, days, sku, baseRate);
     labels.push(days);
-    data.push(result[metric]);
+    data.push(roundToOneDecimal(result[metric]));
   }
 
   const ctx = document.getElementById("dayChart").getContext("2d");
@@ -319,7 +336,7 @@ function plotDayChart() {
     data: {
       labels,
       datasets: [{
-        label: `${metric === "totalDiscount" ? "Total Discount" : "Discounted Price"} (Qty = ${fixedQty})`,
+        label: `${getMetricLabel(metric)} (Qty = ${fixedQty})`,
         data,
         borderColor: "#ff7f0e",
         backgroundColor: "rgba(255, 127, 14, 0.15)",
@@ -331,7 +348,7 @@ function plotDayChart() {
       responsive: true,
       scales: {
         x: { title: { display: true, text: "Days" } },
-        y: { title: { display: true, text: "Total" } }
+        y: { title: { display: true, text: getMetricAxisTitle(metric) } }
       }
     }
   });

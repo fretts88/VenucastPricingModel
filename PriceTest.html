@@ -36,6 +36,55 @@
 
   <div class="result" id="output"></div>
 
+  <h2>Charts</h2>
+
+  <div class="chart-controls">
+    <h3>Total vs Quantity</h3>
+    <label>
+      Base Rate:
+      <input type="number" id="qtyChartBaseRate" value="4.98" step="0.01">
+    </label>
+    <label>
+      Quantity Start:
+      <input type="number" id="qtyChartStart" value="1">
+    </label>
+    <label>
+      Quantity End:
+      <input type="number" id="qtyChartEnd" value="500">
+    </label>
+    <label>
+      Quantity Step:
+      <input type="number" id="qtyChartStep" value="25">
+    </label>
+    <button onclick="plotQuantityChart()">Plot Quantity Chart</button>
+  </div>
+
+  <canvas id="quantityChart" width="600" height="300"></canvas>
+
+  <div class="chart-controls">
+    <h3>Total vs Days</h3>
+    <label>
+      Base Rate:
+      <input type="number" id="dayChartBaseRate" value="4.98" step="0.01">
+    </label>
+    <label>
+      Days Start:
+      <input type="number" id="dayChartStart" value="1">
+    </label>
+    <label>
+      Days End:
+      <input type="number" id="dayChartEnd" value="30">
+    </label>
+    <label>
+      Days Step:
+      <input type="number" id="dayChartStep" value="1">
+    </label>
+    <button onclick="plotDayChart()">Plot Days Chart</button>
+  </div>
+
+  <canvas id="dayChart" width="600" height="300"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Pricing rules JSON
 const pricingData = {
@@ -172,6 +221,100 @@ function runCalc() {
     <p><strong>Total: $${result.total.toFixed(2)}</strong></p>
     <p>Daily Base: $${result.dailyBase.toFixed(2)}</p>
   `;
+}
+
+let quantityChartInstance = null;
+let dayChartInstance = null;
+
+function getNumberInput(id, fallback) {
+  const value = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function plotQuantityChart() {
+  const qtyStart = getNumberInput("qtyChartStart", 1);
+  const qtyEnd = getNumberInput("qtyChartEnd", 500);
+  const qtyStep = getNumberInput("qtyChartStep", 25);
+  const baseRate = getNumberInput("qtyChartBaseRate", 4.98);
+  const fixedDays = parseInt(document.getElementById("days").value, 10) || 1;
+  const sku = document.getElementById("sku").value.trim();
+
+  const labels = [];
+  const data = [];
+  const engine = new PricingEngine(pricingData);
+
+  for (let qty = qtyStart; qty <= qtyEnd; qty += qtyStep) {
+    const result = engine.calculateRental(qty, fixedDays, sku, baseRate);
+    labels.push(qty);
+    data.push(result.total);
+  }
+
+  const ctx = document.getElementById("quantityChart").getContext("2d");
+  if (quantityChartInstance) quantityChartInstance.destroy();
+  quantityChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: `Total (Days = ${fixedDays})`,
+        data,
+        borderColor: "#1f77b4",
+        backgroundColor: "rgba(31, 119, 180, 0.15)",
+        fill: true,
+        tension: 0.15
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { title: { display: true, text: "Quantity" } },
+        y: { title: { display: true, text: "Total" } }
+      }
+    }
+  });
+}
+
+function plotDayChart() {
+  const dayStart = getNumberInput("dayChartStart", 1);
+  const dayEnd = getNumberInput("dayChartEnd", 30);
+  const dayStep = getNumberInput("dayChartStep", 1);
+  const baseRate = getNumberInput("dayChartBaseRate", 4.98);
+  const fixedQty = parseInt(document.getElementById("quantity").value, 10) || 1;
+  const sku = document.getElementById("sku").value.trim();
+
+  const labels = [];
+  const data = [];
+  const engine = new PricingEngine(pricingData);
+
+  for (let days = dayStart; days <= dayEnd; days += dayStep) {
+    const result = engine.calculateRental(fixedQty, days, sku, baseRate);
+    labels.push(days);
+    data.push(result.total);
+  }
+
+  const ctx = document.getElementById("dayChart").getContext("2d");
+  if (dayChartInstance) dayChartInstance.destroy();
+  dayChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: `Total (Qty = ${fixedQty})`,
+        data,
+        borderColor: "#ff7f0e",
+        backgroundColor: "rgba(255, 127, 14, 0.15)",
+        fill: true,
+        tension: 0.15
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { title: { display: true, text: "Days" } },
+        y: { title: { display: true, text: "Total" } }
+      }
+    }
+  });
 }
 </script>
 </body>

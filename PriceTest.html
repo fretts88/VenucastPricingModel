@@ -179,7 +179,7 @@ class PricingEngine {
     return anchor ? anchor.discount : 0;
   }
 
-  getRunningTotal(days, baseRate, effectiveQty, dayDiscounts) {
+  getPriceAfterQuantityDiscount(days, baseRate, effectiveQty, dayDiscounts) {
     const dailyBase = baseRate * effectiveQty;
     let total = 0;
     for (let day = 1; day <= days; day++) {
@@ -195,11 +195,13 @@ class PricingEngine {
 
     const effectiveQty = this.getEffectiveQty(quantity, rules.quantityTiers);
     const handlingFee = this.getHandlingFee(quantity, rules.handlingFees, rules.calculateHandlingFee);
-    const subtotal = this.getRunningTotal(days, baseRate, effectiveQty, rules.dayDiscounts);
-    const total = subtotal + handlingFee;
-    const dailyBase = baseRate * effectiveQty;
+    const discountedPrice = this.getPriceAfterQuantityDiscount(days, baseRate, effectiveQty, rules.dayDiscounts);
+    const total = discountedPrice + handlingFee;
+    //const dailyBase = baseRate * effectiveQty;
+    const originalPrice = baseRate * quantity * days;
+    const totalDiscount = originalPrice - total;
 
-    return { sku, effectiveQty, handlingFee, subtotal, total, dailyBase };
+    return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount };
   }
 }
 
@@ -217,9 +219,11 @@ function runCalc() {
     <h3>Results for SKU: ${result.sku}</h3>
     <p>Effective Quantity: ${result.effectiveQty.toFixed(2)}</p>
     <p>Handling Fee: $${result.handlingFee.toFixed(2)}</p>
-    <p>Subtotal: $${result.subtotal.toFixed(2)}</p>
+    <p>Discounted Price: $${result.discountedPrice.toFixed(2)}</p>
     <p><strong>Total: $${result.total.toFixed(2)}</strong></p>
-    <p>Daily Base: $${result.dailyBase.toFixed(2)}</p>
+   
+    <p>Original Price (no discounts): $${result.originalPrice.toFixed(2)}</p>
+    <p>Total Discount: $${result.totalDiscount.toFixed(2)}</p>
   `;
 }
 

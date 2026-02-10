@@ -1,0 +1,60 @@
+{
+  "pricingRules": {
+    "default": {
+      "calculateHandlingFee": true,
+      "quantityTiers": [
+        { "from": 1, "discount": 0.00 },
+        { "from": 101, "discount": 0.10 },
+        { "from": 201, "discount": 0.20 },
+        { "from": 301, "discount": 0.30 },
+        { "from": 401, "discount": 0.40 },
+        { "from": 501, "discount": 0.50 },
+        { "from": 601, "discount": 0.60 },
+        { "from": 701, "discount": 0.70 },
+        { "from": 801, "discount": 0.80 },
+        { "from": 901, "discount": 0.90 }
+      ],
+      "dayDiscounts": [
+        { "day": 1, "discount": 0.00 },
+        { "day": 2, "discount": 0.20 },
+        { "day": 3, "discount": 0.30 },
+        { "day": 4, "discount": 0.40 },
+        { "day": 5, "discount": 0.50 },
+        { "day": 6, "discount": 0.60 },
+        { "day": 7, "discount": 0.70 },
+        { "day": 8, "discount": 0.80 },
+        { "day": 9, "discount": 0.90 },
+        { "day": 10, "discount": 0.91 },
+        { "day": 11, "discount": 0.92 },
+        { "day": 15, "discount": 0.93 },
+        { "day": 20, "discount": 0.94 },
+        { "day": 30, "discount": 0.95 },
+        { "day": 60, "discount": 0.96 },
+        { "day": 90, "discount": 0.97 }
+      ],
+      "handlingFees": [
+        { "from": 1, "fee": 99 },
+        { "from": 11, "fee": 149 },
+        { "from": 31, "fee": 249 },
+        { "from": 101, "fee": 399 },
+        { "from": 301, "fee": 599 },
+        { "from": 501, "fee": 799 }
+      ]
+    },
+    "sku_headphones": {
+      "baseRate": 500.00,
+      "calculateHandlingFee": false,
+      "quantityTiers": [
+        { "from": 1, "discount": 0.00 },
+        { "from": 50, "discount": 0.05 },
+        { "from": 100, "discount": 0.10 }
+      ],
+      "dayDiscounts": [
+        { "day": 1, "discount": 0.00 },
+        { "day": 7, "discount": 0.20 },
+        { "day": 14, "discount": 0.30 }
+      ],
+      "handlingFees": []
+    }
+  }
+}

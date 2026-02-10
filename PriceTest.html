@@ -56,7 +56,7 @@
       Step:
       <input type="number" id="qtyChartStep" value="1">
     </label>
-    <button onclick="plotQuantityChart()">Plot Quantity Chart</button>
+    <button onclick="chartRenderer.plotQuantityChart()">Plot Quantity Chart</button>
   </div>
 
   <canvas id="quantityChart" width="600" height="300"></canvas>
@@ -75,134 +75,99 @@
       Step:
       <input type="number" id="dayChartStep" value="1">
     </label>
-    <button onclick="plotDayChart()">Plot Days Chart</button>
+    <button onclick="chartRenderer.plotDayChart()">Plot Days Chart</button>
   </div>
 
   <canvas id="dayChart" width="600" height="300"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Pricing rules JSON
-const pricingData = {
-  pricingRules: {
-    default: {
-
-      calculateHandlingFee: true,
-      quantityTiers: [
-        { from: 1, discount: 0.00 },
-        { from: 101, discount: 0.10 },
-        { from: 201, discount: 0.20 },
-        { from: 301, discount: 0.30 },
-        { from: 401, discount: 0.40 },
-        { from: 501, discount: 0.50 },
-        { from: 601, discount: 0.60 },
-        { from: 701, discount: 0.70 },
-        { from: 801, discount: 0.80 },
-        { from: 901, discount: 0.90 }
+<!-- Pricing data embedded as JSON -->
+<script type="application/json" id="pricingDataJson">
+{
+  "pricingRules": {
+    "default": {
+      "calculateHandlingFee": true,
+      "quantityTiers": [
+        { "from": 1, "discount": 0.00 },
+        { "from": 101, "discount": 0.10 },
+        { "from": 201, "discount": 0.20 },
+        { "from": 301, "discount": 0.30 },
+        { "from": 401, "discount": 0.40 },
+        { "from": 501, "discount": 0.50 },
+        { "from": 601, "discount": 0.60 },
+        { "from": 701, "discount": 0.70 },
+        { "from": 801, "discount": 0.80 },
+        { "from": 901, "discount": 0.90 }
       ],
-      dayDiscounts: [
-        { day: 1, discount: 0.00 },
-        { day: 2, discount: 0.20 },
-        { day: 3, discount: 0.30 },
-        { day: 4, discount: 0.40 },
-        { day: 5, discount: 0.50 },
-        { day: 6, discount: 0.60 },
-        { day: 7, discount: 0.70 },
-        { day: 8, discount: 0.80 },
-        { day: 9, discount: 0.90 },
-        { day: 10, discount: 0.91 },
-        { day: 11, discount: 0.92 },
-        { day: 15, discount: 0.93 },
-        { day: 20, discount: 0.94 },
-        { day: 30, discount: 0.95 },
-        { day: 60, discount: 0.96 },
-        { day: 90, discount: 0.97 }
+      "dayDiscounts": [
+        { "day": 1, "discount": 0.00 },
+        { "day": 2, "discount": 0.20 },
+        { "day": 3, "discount": 0.30 },
+        { "day": 4, "discount": 0.40 },
+        { "day": 5, "discount": 0.50 },
+        { "day": 6, "discount": 0.60 },
+        { "day": 7, "discount": 0.70 },
+        { "day": 8, "discount": 0.80 },
+        { "day": 9, "discount": 0.90 },
+        { "day": 10, "discount": 0.91 },
+        { "day": 11, "discount": 0.92 },
+        { "day": 15, "discount": 0.93 },
+        { "day": 20, "discount": 0.94 },
+        { "day": 30, "discount": 0.95 },
+        { "day": 60, "discount": 0.96 },
+        { "day": 90, "discount": 0.97 }
       ],
-      handlingFees: [
-        { from: 1, fee: 99 },
-        { from: 11, fee: 149 },
-        { from: 31, fee: 249 },
-        { from: 101, fee: 399 },
-        { from: 301, fee: 599 },
-        { from: 501, fee: 799 }
+      "handlingFees": [
+        { "from": 1, "fee": 99 },
+        { "from": 11, "fee": 149 },
+        { "from": 31, "fee": 249 },
+        { "from": 101, "fee": 399 },
+        { "from": 301, "fee": 599 },
+        { "from": 501, "fee": 799 }
       ]
     },
-    sku_headphones: {
-      baseRate: 500.00,
-      calculateHandlingFee: false,
-      quantityTiers: [
-        { from: 1, discount: 0.00 },
-        { from: 50, discount: 0.05 },
-        { from: 100, discount: 0.10 }
+    "sku_headphones": {
+      "baseRate": 500.00,
+      "calculateHandlingFee": false,
+      "quantityTiers": [
+        { "from": 1, "discount": 0.00 },
+        { "from": 50, "discount": 0.05 },
+        { "from": 100, "discount": 0.10 }
       ],
-      dayDiscounts: [
-        { day: 1, discount: 0.00 },
-        { day: 7, discount: 0.20 },
-        { day: 14, discount: 0.30 }
+      "dayDiscounts": [
+        { "day": 1, "discount": 0.00 },
+        { "day": 7, "discount": 0.20 },
+        { "day": 14, "discount": 0.30 }
       ],
-      handlingFees: []
+      "handlingFees": []
     }
-  }
-};
-
-// Pricing engine class (pure calculation)
-class PricingEngine {
-  constructor(data) {
-    this.data = data;
-  }
-
-  getEffectiveQty(quantity, tiers) {
-    let effectiveQty = 0;
-    for (let i = 0; i < tiers.length; i++) {
-      const tier = tiers[i];
-      const nextFrom = (i + 1 < tiers.length) ? tiers[i + 1].from : Infinity;
-      const tierQty = Math.max(0, Math.min(quantity, nextFrom - 1) - tier.from + 1);
-      if (tierQty > 0) {
-        effectiveQty += tierQty * (1 - tier.discount);
-      }
-    }
-    return effectiveQty;
-  }
-
-  getHandlingFee(quantity, fees, enabled) {
-    if (!enabled) return 0;
-    const row = fees.filter(r => quantity >= r.from).slice(-1)[0];
-    return row ? row.fee : 0;
-  }
-
-  getDayDiscount(day, dayDiscounts) {
-    const anchor = dayDiscounts.filter(d => d.day <= day).sort((a, b) => a.day - b.day).slice(-1)[0];
-    return anchor ? anchor.discount : 0;
-  }
-
-  getPriceAfterQuantityDiscount(days, baseRate, effectiveQty, dayDiscounts) {
-    const dailyBase = baseRate * effectiveQty;
-    let total = 0;
-    for (let day = 1; day <= days; day++) {
-      const discount = this.getDayDiscount(day, dayDiscounts);
-      const dayFactor = 1 - discount;
-      total += dailyBase * dayFactor;
-    }
-    return total;
-  }
-
-  calculateRental(quantity, days, sku, baseRate) {
-    const rules = this.data.pricingRules[sku] || this.data.pricingRules.default;
-
-    const effectiveQty = this.getEffectiveQty(quantity, rules.quantityTiers);
-    const handlingFee = this.getHandlingFee(quantity, rules.handlingFees, rules.calculateHandlingFee);
-    const discountedPrice = this.getPriceAfterQuantityDiscount(days, baseRate, effectiveQty, rules.dayDiscounts);
-    const total = discountedPrice + handlingFee;
-    //const dailyBase = baseRate * effectiveQty;
-    const originalPrice = baseRate * quantity * days;
-    const totalDiscount = originalPrice - discountedPrice;
-    const discountPct = originalPrice > 0 ? (totalDiscount / originalPrice) * 100 : 0;
-
-    return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount, discountPct };
   }
 }
+</script>
 
-// UI handler
+<script>
+// Parse embedded JSON data
+const pricingData = JSON.parse(document.getElementById('pricingDataJson').textContent);
+</script>
+
+<!-- Chart.js library (local) -->
+<script src="./chart.umd.min.js"></script>
+
+<!-- Pricing engine (core business logic) -->
+<script src="./pricing.js"></script>
+
+<!-- Chart renderer for testing UI -->
+<script src="./chart-renderer.js"></script>
+
+<!-- Initialize chart renderer and test UI -->
+<script>
+let chartRenderer;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  chartRenderer = new ChartRenderer(pricingData);
+});
+
+// Test UI: Calculate button handler
 function runCalc() {
   const qty = parseInt(document.getElementById("quantity").value, 10);
   const baseRate = parseFloat(document.getElementById("baseRate").value);
@@ -223,156 +188,8 @@ function runCalc() {
     <p>Total Discount: $${result.totalDiscount.toFixed(2)}</p>
   `;
 
-  plotQuantityChart();
-  plotDayChart();
-}
-
-let quantityChartInstance = null;
-let dayChartInstance = null;
-
-function getNumberInput(id, fallback) {
-  const value = parseFloat(document.getElementById(id).value);
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function getPositiveInt(id, fallback) {
-  const value = parseInt(document.getElementById(id).value, 10);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function getMetricLabel(metric) {
-  if (metric === "totalDiscount") return "Total Discount";
-  if (metric === "discountPct") return "Percent Discount";
-  return "Discounted Price";
-}
-
-function getMetricAxisTitle(metric) {
-  return metric === "discountPct" ? "Percent" : "Total";
-}
-
-function roundToOneDecimal(value) {
-  return Math.round(value * 10) / 10;
-}
-
-function formatMetricValue(metric, value) {
-  const rounded = roundToOneDecimal(value);
-  return metric === "discountPct" ? `${rounded}%` : `$${rounded}`;
-}
-
-function plotQuantityChart() {
-  const qtyMax = getPositiveInt("quantity", 1);
-  const qtyStep = getPositiveInt("qtyChartStep", 1);
-  const baseRate = getNumberInput("baseRate", 0);
-  const metric = document.getElementById("qtyChartMetric").value;
-  const fixedDays = getPositiveInt("days", 1);
-  const sku = document.getElementById("sku").value.trim();
-
-  const labels = [];
-  const data = [];
-  const engine = new PricingEngine(pricingData);
-
-  for (let qty = 1; qty <= qtyMax; qty += qtyStep) {
-    const result = engine.calculateRental(qty, fixedDays, sku, baseRate);
-    labels.push(qty);
-    data.push(roundToOneDecimal(result[metric]));
-  }
-
-  const ctx = document.getElementById("quantityChart").getContext("2d");
-  if (quantityChartInstance) quantityChartInstance.destroy();
-  quantityChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: `${getMetricLabel(metric)} (Days = ${fixedDays})`,
-        data,
-        borderColor: "#1f77b4",
-        backgroundColor: "rgba(31, 119, 180, 0.15)",
-        fill: true,
-        tension: 0.15
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const value = context.parsed.y;
-              return `${context.dataset.label}: ${formatMetricValue(metric, value)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { title: { display: true, text: "Quantity" } },
-        y: {
-          title: { display: true, text: getMetricAxisTitle(metric) },
-          ticks: {
-            callback: (value) => formatMetricValue(metric, value)
-          }
-        }
-      }
-    }
-  });
-}
-
-function plotDayChart() {
-  const dayMax = getPositiveInt("days", 1);
-  const dayStep = getPositiveInt("dayChartStep", 1);
-  const baseRate = getNumberInput("baseRate", 0);
-  const metric = document.getElementById("dayChartMetric").value;
-  const fixedQty = getPositiveInt("quantity", 1);
-  const sku = document.getElementById("sku").value.trim();
-
-  const labels = [];
-  const data = [];
-  const engine = new PricingEngine(pricingData);
-
-  for (let days = 1; days <= dayMax; days += dayStep) {
-    const result = engine.calculateRental(fixedQty, days, sku, baseRate);
-    labels.push(days);
-    data.push(roundToOneDecimal(result[metric]));
-  }
-
-  const ctx = document.getElementById("dayChart").getContext("2d");
-  if (dayChartInstance) dayChartInstance.destroy();
-  dayChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: `${getMetricLabel(metric)} (Qty = ${fixedQty})`,
-        data,
-        borderColor: "#ff7f0e",
-        backgroundColor: "rgba(255, 127, 14, 0.15)",
-        fill: true,
-        tension: 0.15
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const value = context.parsed.y;
-              return `${context.dataset.label}: ${formatMetricValue(metric, value)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { title: { display: true, text: "Days" } },
-        y: {
-          title: { display: true, text: getMetricAxisTitle(metric) },
-          ticks: {
-            callback: (value) => formatMetricValue(metric, value)
-          }
-        }
-      }
-    }
-  });
+  chartRenderer.plotQuantityChart();
+  chartRenderer.plotDayChart();
 }
 </script>
 </body>

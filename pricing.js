@@ -48,8 +48,9 @@ class PricingEngine {
     const total = discountedPrice + handlingFee;
     const originalPrice = baseRate * quantity * days;
     const totalDiscount = originalPrice - discountedPrice;
+    const discountedDailyRate = Math.round((discountedPrice / days / quantity) * 100) / 100;
     const discountPct = originalPrice > 0 ? (totalDiscount / originalPrice) * 100 : 0;
 
-    return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount, discountPct };
+    return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount, discountPct, discountedDailyRate };
   }
 }

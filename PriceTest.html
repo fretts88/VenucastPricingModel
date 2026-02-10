@@ -5,32 +5,36 @@
   <title>Rental Calculator Demo</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 2em; }
-    label { display: block; margin-top: 1em; }
-    input { padding: 0.3em; width: 120px; }
+    label { display: grid; grid-template-columns: 160px minmax(0, 180px); gap: 12px; align-items: center; margin: 0; }
+    input, select { padding: 0.3em; width: 100%; box-sizing: border-box; }
     button { margin-top: 1em; padding: 0.5em 1em; }
     .result { margin-top: 2em; padding: 1em; border: 1px solid #ccc; }
     .result h3 { margin-top: 0; }
+    .form-section, .chart-controls { display: grid; gap: 12px; max-width: 520px; }
+    .chart-controls h3 { margin: 0; }
   </style>
 </head>
 <body>
   <h1>Rental Calculator</h1>
 
-  <label>
-    Quantity:
-    <input type="number" id="quantity" value="150">
-  </label>
-  <label>
-    Base Rate:
-    <input type="number" id="baseRate" value="4.98" step="0.01">
-  </label>
-  <label>
-    Days:
-    <input type="number" id="days" value="5">
-  </label>
-  <label>
-    SKU:
-    <input type="text" id="sku" value="default">
-  </label>
+  <div class="form-section">
+    <label>
+      Quantity:
+      <input type="number" id="quantity" value="150">
+    </label>
+    <label>
+      Base Rate:
+      <input type="number" id="baseRate" value="4.98" step="0.01">
+    </label>
+    <label>
+      Days:
+      <input type="number" id="days" value="5">
+    </label>
+    <label>
+      SKU:
+      <input type="text" id="sku" value="default">
+    </label>
+  </div>
 
   <button onclick="runCalc()">Calculate</button>
 
@@ -41,10 +45,6 @@
   <div class="chart-controls">
     <h3>Total vs Quantity</h3>
     <label>
-      Base Rate:
-      <input type="number" id="qtyChartBaseRate" value="4.98" step="0.01">
-    </label>
-    <label>
       Plot:
       <select id="qtyChartMetric">
         <option value="discountedPrice">Discounted Price</option>
@@ -53,16 +53,8 @@
       </select>
     </label>
     <label>
-      Quantity Start:
-      <input type="number" id="qtyChartStart" value="1">
-    </label>
-    <label>
-      Quantity End:
-      <input type="number" id="qtyChartEnd" value="500">
-    </label>
-    <label>
-      Quantity Step:
-      <input type="number" id="qtyChartStep" value="25">
+      Step:
+      <input type="number" id="qtyChartStep" value="1">
     </label>
     <button onclick="plotQuantityChart()">Plot Quantity Chart</button>
   </div>
@@ -72,10 +64,6 @@
   <div class="chart-controls">
     <h3>Total vs Days</h3>
     <label>
-      Base Rate:
-      <input type="number" id="dayChartBaseRate" value="4.98" step="0.01">
-    </label>
-    <label>
       Plot:
       <select id="dayChartMetric">
         <option value="discountedPrice">Discounted Price</option>
@@ -84,15 +72,7 @@
       </select>
     </label>
     <label>
-      Days Start:
-      <input type="number" id="dayChartStart" value="1">
-    </label>
-    <label>
-      Days End:
-      <input type="number" id="dayChartEnd" value="30">
-    </label>
-    <label>
-      Days Step:
+      Step:
       <input type="number" id="dayChartStep" value="1">
     </label>
     <button onclick="plotDayChart()">Plot Days Chart</button>
@@ -242,6 +222,9 @@ function runCalc() {
     <p>Original Price (no discounts): $${result.originalPrice.toFixed(2)}</p>
     <p>Total Discount: $${result.totalDiscount.toFixed(2)}</p>
   `;
+
+  plotQuantityChart();
+  plotDayChart();
 }
 
 let quantityChartInstance = null;
@@ -250,6 +233,11 @@ let dayChartInstance = null;
 function getNumberInput(id, fallback) {
   const value = parseFloat(document.getElementById(id).value);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function getPositiveInt(id, fallback) {
+  const value = parseInt(document.getElementById(id).value, 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function getMetricLabel(metric) {
@@ -266,20 +254,24 @@ function roundToOneDecimal(value) {
   return Math.round(value * 10) / 10;
 }
 
+function formatMetricValue(metric, value) {
+  const rounded = roundToOneDecimal(value);
+  return metric === "discountPct" ? `${rounded}%` : `$${rounded}`;
+}
+
 function plotQuantityChart() {
-  const qtyStart = getNumberInput("qtyChartStart", 1);
-  const qtyEnd = getNumberInput("qtyChartEnd", 500);
-  const qtyStep = getNumberInput("qtyChartStep", 25);
-  const baseRate = getNumberInput("qtyChartBaseRate", 4.98);
+  const qtyMax = getPositiveInt("quantity", 1);
+  const qtyStep = getPositiveInt("qtyChartStep", 1);
+  const baseRate = getNumberInput("baseRate", 0);
   const metric = document.getElementById("qtyChartMetric").value;
-  const fixedDays = parseInt(document.getElementById("days").value, 10) || 1;
+  const fixedDays = getPositiveInt("days", 1);
   const sku = document.getElementById("sku").value.trim();
 
   const labels = [];
   const data = [];
   const engine = new PricingEngine(pricingData);
 
-  for (let qty = qtyStart; qty <= qtyEnd; qty += qtyStep) {
+  for (let qty = 1; qty <= qtyMax; qty += qtyStep) {
     const result = engine.calculateRental(qty, fixedDays, sku, baseRate);
     labels.push(qty);
     data.push(roundToOneDecimal(result[metric]));
@@ -302,28 +294,42 @@ function plotQuantityChart() {
     },
     options: {
       responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const value = context.parsed.y;
+              return `${context.dataset.label}: ${formatMetricValue(metric, value)}`;
+            }
+          }
+        }
+      },
       scales: {
         x: { title: { display: true, text: "Quantity" } },
-        y: { title: { display: true, text: getMetricAxisTitle(metric) } }
+        y: {
+          title: { display: true, text: getMetricAxisTitle(metric) },
+          ticks: {
+            callback: (value) => formatMetricValue(metric, value)
+          }
+        }
       }
     }
   });
 }
 
 function plotDayChart() {
-  const dayStart = getNumberInput("dayChartStart", 1);
-  const dayEnd = getNumberInput("dayChartEnd", 30);
-  const dayStep = getNumberInput("dayChartStep", 1);
-  const baseRate = getNumberInput("dayChartBaseRate", 4.98);
+  const dayMax = getPositiveInt("days", 1);
+  const dayStep = getPositiveInt("dayChartStep", 1);
+  const baseRate = getNumberInput("baseRate", 0);
   const metric = document.getElementById("dayChartMetric").value;
-  const fixedQty = parseInt(document.getElementById("quantity").value, 10) || 1;
+  const fixedQty = getPositiveInt("quantity", 1);
   const sku = document.getElementById("sku").value.trim();
 
   const labels = [];
   const data = [];
   const engine = new PricingEngine(pricingData);
 
-  for (let days = dayStart; days <= dayEnd; days += dayStep) {
+  for (let days = 1; days <= dayMax; days += dayStep) {
     const result = engine.calculateRental(fixedQty, days, sku, baseRate);
     labels.push(days);
     data.push(roundToOneDecimal(result[metric]));
@@ -346,9 +352,24 @@ function plotDayChart() {
     },
     options: {
       responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const value = context.parsed.y;
+              return `${context.dataset.label}: ${formatMetricValue(metric, value)}`;
+            }
+          }
+        }
+      },
       scales: {
         x: { title: { display: true, text: "Days" } },
-        y: { title: { display: true, text: getMetricAxisTitle(metric) } }
+        y: {
+          title: { display: true, text: getMetricAxisTitle(metric) },
+          ticks: {
+            callback: (value) => formatMetricValue(metric, value)
+          }
+        }
       }
     }
   });

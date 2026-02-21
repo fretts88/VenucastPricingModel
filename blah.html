@@ -1,0 +1,22 @@
+ap: 12px; \/* 减小日期框与天数显示的间距 *\/\n flex-wrap: wrap;\n}\n\n.date-range {\n padding: 9px 14px; \/* 减小输入框内边距 *\/\n border:
+1px solid #dee2e6;\n border-radius: 8px;\n font-size: 1em;\n width: 100%;\n max-width: 260px; \/* 略微减小最大宽度 *\/\n
+background-color: #ffffff;\n color: #4a5568;\n box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);\n transition: border-color
+0.2s ease, box-shadow 0.2s ease;\n}\n\n.date-range:focus {\n outline: none;\n border-color: #5433F4;\n box-shadow: 0 0 0
+3px rgba(84, 51, 244, 0.1);\n}\n\n.days-display {\n display: flex;\n align-items: center;\n gap: 6px;\n padding: 8px
+14px; \/* 减小内边距 *\/\n background-color: #f7f3ff;\n border-radius: 8px;\n color: #4a5568;\n font-weight: 500;\n
+white-space: nowrap;\n}\n\n.days-label {\n color: #718096;\n font-weight: 400;\n}\n\n#days-count {\n color: #5433F4;\n
+font-size: 1.05em;\n}\n\n.days-unit {\n color: #718096;\n}\n\n.total-price-container {\n display: flex;\n align-items:
+center;\n gap: 10px;\n margin-bottom: 10px; \/* 减小与按钮的间距 *\/\n padding-top: 15px; \/* 减小上边框内边距 *\/\n border-top: 2px
+solid #f5f5f5;\n}\n\n.total-label {\n font-size: 1.1em; \/* 略微减小字体 *\/\n font-weight: 500;\n color:
+#2d3748;\n}\n\n.total-amount {\n font-size: 1.8em; \/* 略微减小字体 *\/\n font-weight: 700;\n color: #5433F4;\n margin: 0;\n
+line-height: 1.2;\n}\n\n.add-btn {\n background: #5433F4;\n color: #ffffff;\n padding: 12px 24px; \/* 减小按钮内边距 *\/\n
+border-radius: 12px;\n font-size: 1.05em; \/* 略微减小字体 *\/\n font-weight: 600;\n cursor: pointer;\n width: 50%;\n border:
+none;\n transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;\n box-shadow: 0 4px 14px
+rgba(84, 51, 244, 0.15);\n}\n\n.add-btn:hover {\n background: #4a2cc7;\n transform: translateY(-2px);\n box-shadow: 0
+6px 20px rgba(84, 51, 244, 0.2);\n}\n\n.add-btn:active {\n transform: translateY(0);\n}\n\n.add-btn:focus {\n outline:
+none;\n box-shadow: 0 0 0 3px rgba(84, 51, 244, 0.3);\n}\n\n\/* Responsive adjustments *\/\n@media (max-width: 576px)
+{\n .custom-rental-package {\n padding: 15px 12px;\n }\n .product-info {\n flex-direction: column;\n align-items:
+flex-start;\n gap: 8px; \/* 减小移动端垂直间距 *\/\n }\n .product-price, .qty-wrap {\n width: 100%;\n }\n .qty-wrap {\n
+justify-content: flex-start;\n }\n .date-picker-container {\n flex-direction: column;\n align-items: flex-start;\n gap:
+8px; \/* 减小移动端垂直间距 *\/\n }\n .date-range, .days-display {\n width: 100%;\n max-width: none;\n }\n .total-amount {\n
+font-size: 1.6em;\n }\n}\n<\ /style>

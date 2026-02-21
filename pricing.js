@@ -54,3 +54,6 @@ class PricingEngine {
     return { sku, effectiveQty, handlingFee, discountedPrice, total, originalPrice, totalDiscount, discountPct, discountedDailyRate };
   }
 }
+
+// Attach to window for global access
+window.PricingEngine = PricingEngine;

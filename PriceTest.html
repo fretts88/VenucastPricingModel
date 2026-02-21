@@ -25,6 +25,7 @@
     <button class="tablink" onclick="openTab(event, 'inputTab')" id="defaultTab">Input</button>
     <button class="tablink" onclick="openTab(event, 'quantityTab')">Quantity Chart</button>
     <button class="tablink" onclick="openTab(event, 'daysTab')">Days Chart</button>
+    <button class="tablink" onclick="openTab(event, 'tableTab')">Table</button>
   </div>
 
   <div id="inputTab" class="tabcontent">
@@ -71,7 +72,6 @@
         Step:
         <input type="number" id="qtyChartStep" value="1">
       </label>
-      <button onclick="chartRenderer.plotQuantityChart()">Plot Quantity Chart</button>
     </div>
     <canvas id="quantityChart" width="600" height="300"></canvas>
   </div>
@@ -93,9 +93,32 @@
         Step:
         <input type="number" id="dayChartStep" value="1">
       </label>
-      <button onclick="chartRenderer.plotDayChart()">Plot Days Chart</button>
     </div>
     <canvas id="dayChart" width="600" height="300"></canvas>
+  </div>
+
+  <div id="tableTab" class="tabcontent" style="display:none">
+    <h2>Table</h2>
+    <div class="chart-controls">
+      <label>
+        Plot:
+        <select id="tableMetric">
+          <option value="discountedPrice">Discounted Price</option>
+          <option value="totalDiscount">Total Discount</option>
+          <option value="discountPct">Percent Discount</option>
+          <option value="percentOfPurchase">% of Purchase Price</option>
+        </select>
+      </label>
+      <label>
+        Qty Step:
+        <input type="number" id="tableQtyStep" value="10">
+      </label>
+      <label>
+        Days Step:
+        <input type="number" id="tableDayStep" value="1">
+      </label>
+    </div>
+    <div id="tableOutput"></div>
   </div>
 
 <!-- Pricing data embedded as JSON -->
@@ -196,6 +219,7 @@ function openTab(evt, tabId) {
 document.addEventListener('DOMContentLoaded', () => {
   chartRenderer = new ChartRenderer(pricingData);
   document.getElementById('defaultTab').click();
+  attachChartInputListeners();
 });
 
 // Test UI: Calculate button handler
@@ -231,6 +255,72 @@ function runCalc() {
   chartRenderer.plotQuantityChart();
   chartRenderer.plotDayChart();
 }
+
+
+function refreshCharts() {
+  if (chartRenderer) {
+    chartRenderer.plotQuantityChart();
+    chartRenderer.plotDayChart();
+    renderTable();
+  }
+}
+
+
+function attachChartInputListeners() {
+  const chartInputs = [
+    "quantity", "baseRate", "purchasePrice", "days", "sku",
+    "qtyChartStep", "qtyChartMetric", "dayChartStep", "dayChartMetric",
+    "tableMetric", "tableQtyStep", "tableDayStep"
+  ];
+  chartInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", refreshCharts);
+      if (el.tagName === "SELECT") {
+        el.addEventListener("change", refreshCharts);
+      }
+    }
+  });
+}
+
+function renderTable() {
+  const qtyMax = parseInt(document.getElementById("quantity").value, 10) || 1;
+  const qtyStep = parseInt(document.getElementById("tableQtyStep").value, 10) || 10;
+  const dayMax = parseInt(document.getElementById("days").value, 10) || 1;
+  const dayStep = parseInt(document.getElementById("tableDayStep").value, 10) || 1;
+  const baseRate = parseFloat(document.getElementById("baseRate").value) || 0;
+  const purchasePrice = parseFloat(document.getElementById("purchasePrice").value) || 0;
+  const sku = document.getElementById("sku").value.trim();
+  const metric = document.getElementById("tableMetric").value;
+  const engine = new PricingEngine(pricingData);
+
+  let html = '<table border="1" cellpadding="4" cellspacing="0"><thead><tr><th>Qty \ Days</th>';
+  for (let day = 1; day <= dayMax; day += dayStep) {
+    html += `<th>${day}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+  for (let qty = 1; qty <= qtyMax; qty += qtyStep) {
+    html += `<tr><th>${qty}</th>`;
+    for (let day = 1; day <= dayMax; day += dayStep) {
+      const result = engine.calculateRental(qty, day, sku, baseRate);
+      let value;
+      if (metric === "percentOfPurchase") {
+        const totalPurchase = qty * purchasePrice;
+        value = totalPurchase > 0 ? (result.discountedPrice / totalPurchase) * 100 : 0;
+        value = ChartRenderer.roundToOneDecimal(value) + "%";
+      } else if (metric === "discountPct") {
+        value = ChartRenderer.roundToOneDecimal(result[metric]) + "%";
+      } else {
+        value = "$" + ChartRenderer.roundToOneDecimal(result[metric]);
+      }
+      html += `<td>${value}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById("tableOutput").innerHTML = html;
+}
 </script>
+
 </body>
 </html>

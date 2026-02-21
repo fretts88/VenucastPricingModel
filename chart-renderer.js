@@ -13,16 +13,19 @@ class ChartRenderer {
   static getMetricLabel(metric) {
     if (metric === "totalDiscount") return "Total Discount";
     if (metric === "discountPct") return "Percent Discount";
+    if (metric === "percentOfPurchase") return "% of Purchase Price";
     return "Discounted Price";
   }
 
   static getMetricAxisTitle(metric) {
-    return metric === "discountPct" ? "Percent" : "Total";
+    if (metric === "discountPct" || metric === "percentOfPurchase") return "Percent";
+    return "Total";
   }
 
   static formatMetricValue(metric, value) {
     const rounded = ChartRenderer.roundToOneDecimal(value);
-    return metric === "discountPct" ? `${rounded}%` : `$${rounded}`;
+    if (metric === "discountPct" || metric === "percentOfPurchase") return `${rounded}%`;
+    return `$${rounded}`;
   }
 
   plotQuantityChart() {
@@ -32,6 +35,7 @@ class ChartRenderer {
     const metric = document.getElementById("qtyChartMetric").value;
     const fixedDays = this.getPositiveInt("days", 1);
     const sku = document.getElementById("sku").value.trim();
+    const purchasePrice = this.getNumberInput("purchasePrice", 0);
 
     const labels = [];
     const data = [];
@@ -40,7 +44,13 @@ class ChartRenderer {
     for (let qty = 1; qty <= qtyMax; qty += qtyStep) {
       const result = engine.calculateRental(qty, fixedDays, sku, baseRate);
       labels.push(qty);
-      data.push(ChartRenderer.roundToOneDecimal(result[metric]));
+      if (metric === "percentOfPurchase") {
+        const totalPurchase = qty * purchasePrice;
+        const percent = totalPurchase > 0 ? (result.discountedPrice / totalPurchase) * 100 : 0;
+        data.push(ChartRenderer.roundToOneDecimal(percent));
+      } else {
+        data.push(ChartRenderer.roundToOneDecimal(result[metric]));
+      }
     }
 
     const ctx = document.getElementById("quantityChart").getContext("2d");
@@ -90,6 +100,7 @@ class ChartRenderer {
     const metric = document.getElementById("dayChartMetric").value;
     const fixedQty = this.getPositiveInt("quantity", 1);
     const sku = document.getElementById("sku").value.trim();
+    const purchasePrice = this.getNumberInput("purchasePrice", 0);
 
     const labels = [];
     const data = [];
@@ -98,7 +109,13 @@ class ChartRenderer {
     for (let days = 1; days <= dayMax; days += dayStep) {
       const result = engine.calculateRental(fixedQty, days, sku, baseRate);
       labels.push(days);
-      data.push(ChartRenderer.roundToOneDecimal(result[metric]));
+      if (metric === "percentOfPurchase") {
+        const totalPurchase = fixedQty * purchasePrice;
+        const percent = totalPurchase > 0 ? (result.discountedPrice / totalPurchase) * 100 : 0;
+        data.push(ChartRenderer.roundToOneDecimal(percent));
+      } else {
+        data.push(ChartRenderer.roundToOneDecimal(result[metric]));
+      }
     }
 
     const ctx = document.getElementById("dayChart").getContext("2d");

@@ -12,73 +12,91 @@
     .result h3 { margin-top: 0; }
     .form-section, .chart-controls { display: grid; gap: 12px; max-width: 520px; }
     .chart-controls h3 { margin: 0; }
+    .tabs { margin-bottom: 1em; }
+    .tablink { background: #eee; border: 1px solid #ccc; padding: 0.5em 1em; cursor: pointer; margin-right: 4px; }
+    .tablink.active { background: #fff; border-bottom: 2px solid #0078d7; }
+    .tabcontent { display: none; }
+    .tabcontent.active { display: block; }
   </style>
 </head>
 <body>
   <h1>Rental Calculator</h1>
-
-  <div class="form-section">
-    <label>
-      Quantity:
-      <input type="number" id="quantity" value="150">
-    </label>
-    <label>
-      Base Rate:
-      <input type="number" id="baseRate" value="4.98" step="0.01">
-    </label>
-    <label>
-      Days:
-      <input type="number" id="days" value="5">
-    </label>
-    <label>
-      SKU:
-      <input type="text" id="sku" value="default">
-    </label>
+  <div class="tabs">
+    <button class="tablink" onclick="openTab(event, 'inputTab')" id="defaultTab">Input</button>
+    <button class="tablink" onclick="openTab(event, 'quantityTab')">Quantity Chart</button>
+    <button class="tablink" onclick="openTab(event, 'daysTab')">Days Chart</button>
   </div>
 
-  <button onclick="runCalc()">Calculate</button>
-
-  <div class="result" id="output"></div>
-
-  <h2>Charts</h2>
-
-  <div class="chart-controls">
-    <h3>Total vs Quantity</h3>
-    <label>
-      Plot:
-      <select id="qtyChartMetric">
-        <option value="discountedPrice">Discounted Price</option>
-        <option value="totalDiscount">Total Discount</option>
-        <option value="discountPct">Percent Discount</option>
-      </select>
-    </label>
-    <label>
-      Step:
-      <input type="number" id="qtyChartStep" value="1">
-    </label>
-    <button onclick="chartRenderer.plotQuantityChart()">Plot Quantity Chart</button>
+  <div id="inputTab" class="tabcontent">
+    <div class="form-section">
+      <label>
+        Quantity:
+        <input type="number" id="quantity" value="150">
+      </label>
+      <label>
+        Base Rate:
+        <input type="number" id="baseRate" value="4.98" step="0.01">
+      </label>
+      <label>
+        Purchase Price:
+        <input type="number" id="purchasePrice" value="100.00" step="0.01">
+      </label>
+      <label>
+        Days:
+        <input type="number" id="days" value="5">
+      </label>
+      <label>
+        SKU:
+        <input type="text" id="sku" value="default">
+      </label>
+    </div>
+    <button onclick="runCalc()">Calculate</button>
+    <div class="result" id="output"></div>
   </div>
 
-  <canvas id="quantityChart" width="600" height="300"></canvas>
-
-  <div class="chart-controls">
-    <h3>Total vs Days</h3>
-    <label>
-      Plot:
-      <select id="dayChartMetric">
-        <option value="discountedPrice">Discounted Price</option>
-        <option value="totalDiscount">Total Discount</option>
-        <option value="discountPct">Percent Discount</option>
-      </select>
-    </label>
-    <label>
-      Step:
-      <input type="number" id="dayChartStep" value="1">
-    </label>
-    <button onclick="chartRenderer.plotDayChart()">Plot Days Chart</button>
+  <div id="quantityTab" class="tabcontent" style="display:none">
+    <h2>Quantity Chart</h2>
+    <div class="chart-controls">
+      <h3>Total vs Quantity</h3>
+      <label>
+        Plot:
+        <select id="qtyChartMetric">
+          <option value="discountedPrice">Discounted Price</option>
+          <option value="totalDiscount">Total Discount</option>
+          <option value="discountPct">Percent Discount</option>
+          <option value="percentOfPurchase">% of Purchase Price</option>
+        </select>
+      </label>
+      <label>
+        Step:
+        <input type="number" id="qtyChartStep" value="1">
+      </label>
+      <button onclick="chartRenderer.plotQuantityChart()">Plot Quantity Chart</button>
+    </div>
+    <canvas id="quantityChart" width="600" height="300"></canvas>
   </div>
 
-  <canvas id="dayChart" width="600" height="300"></canvas>
+  <div id="daysTab" class="tabcontent" style="display:none">
+    <h2>Days Chart</h2>
+    <div class="chart-controls">
+      <h3>Total vs Days</h3>
+      <label>
+        Plot:
+        <select id="dayChartMetric">
+          <option value="discountedPrice">Discounted Price</option>
+          <option value="totalDiscount">Total Discount</option>
+          <option value="discountPct">Percent Discount</option>
+          <option value="percentOfPurchase">% of Purchase Price</option>
+        </select>
+      </label>
+      <label>
+        Step:
+        <input type="number" id="dayChartStep" value="1">
+      </label>
+      <button onclick="chartRenderer.plotDayChart()">Plot Days Chart</button>
+    </div>
+    <canvas id="dayChart" width="600" height="300"></canvas>
+  </div>
 
 <!-- Pricing data embedded as JSON -->
 <script type="application/json" id="pricingDataJson">
@@ -163,9 +181,21 @@ const pricingData = JSON.parse(document.getElementById('pricingDataJson').textCo
 <script>
 let chartRenderer;
 
-// Initialize on page load
+// Tab logic
+function openTab(evt, tabId) {
+  const tabcontents = document.querySelectorAll('.tabcontent');
+  tabcontents.forEach(tc => tc.style.display = 'none');
+  tabcontents.forEach(tc => tc.classList.remove('active'));
+  document.getElementById(tabId).style.display = 'block';
+  document.getElementById(tabId).classList.add('active');
+  const tablinks = document.querySelectorAll('.tablink');
+  tablinks.forEach(tl => tl.classList.remove('active'));
+  evt.currentTarget.classList.add('active');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   chartRenderer = new ChartRenderer(pricingData);
+  document.getElementById('defaultTab').click();
 });
 
 // Test UI: Calculate button handler
@@ -178,16 +208,24 @@ function runCalc() {
   const engine = new PricingEngine(pricingData);
   const result = engine.calculateRental(qty, days, sku, baseRate);
 
+  const purchasePriceInput = document.getElementById("purchasePrice");
+  const purchasePrice = parseFloat(purchasePriceInput.value);
+  const purchasePriceTotal = purchasePrice * qty;
+  const rentalPercentOfPurchase = (result.discountedPrice / purchasePriceTotal) * 100;
+
   document.getElementById("output").innerHTML = `
     <h3>Results for SKU: ${result.sku}</h3>
     <p>Effective Quantity: ${result.effectiveQty.toFixed(2)}</p>
-    <p>Handling Fee: $${result.handlingFee.toFixed(2)}</p>
-    <p>Discounted Price: $${result.discountedPrice.toFixed(2)}</p>
     <p>Discounted Daily rate: $${result.discountedDailyRate.toFixed(2)}</p>
+    <p>Discounted Price: $${result.discountedPrice.toFixed(2)}</p>
+    <p>Handling Fee: $${result.handlingFee.toFixed(2)}</p>
     <p><strong>Total: $${result.total.toFixed(2)}</strong></p>
-   
+    
     <p>Original Price (no discounts): $${result.originalPrice.toFixed(2)}</p>
     <p>Total Discount: $${result.totalDiscount.toFixed(2)}</p>
+    <p>Purchase Price Total: $${purchasePriceTotal.toFixed(2)}</p>
+    <p>Rental as % of Purchase Price: ${rentalPercentOfPurchase.toFixed(2)}%</p>
+  
   `;
 
   chartRenderer.plotQuantityChart();
